@@ -164,7 +164,16 @@ void Tensor::debug() const {
 }
 
 bool Tensor::isContiguous() const {
-    TO_BE_IMPLEMENTED();
+    const auto& shape = _meta.shape;
+    const auto& strides = _meta.strides;
+
+    if (shape.empty()) return true; // 或者按项目约定处理 0-d
+    ptrdiff_t expected = 1;
+    for (int i = (int)shape.size() - 1; i >= 0; --i) {
+        if (shape[i] == 1) continue;              // 关键：size=1 的维度忽略 stride 约束
+        if (strides[i] != expected) return false; // 关键：对齐 expected
+        expected *= (ptrdiff_t)shape[i];
+    }
     return true;
 }
 
@@ -184,7 +193,22 @@ tensor_t Tensor::slice(size_t dim, size_t start, size_t end) const {
 }
 
 void Tensor::load(const void *src_) {
-    TO_BE_IMPLEMENTED();
+    if (!src_) throw std::runtime_error("Tensor::load: src is null");
+
+    const size_t bytes = numel() * elementSize();
+    if (bytes == 0) return;
+
+    if (!isContiguous()) {
+        throw std::runtime_error("Tensor::load: only supports contiguous tensor");
+    }
+
+    auto *api = core::context().runtime().api();
+
+    const auto kind = (deviceType() == LLAISYS_DEVICE_CPU)
+        ? LLAISYS_MEMCPY_H2H
+        : LLAISYS_MEMCPY_H2D;
+
+    api->memcpy_sync((void*)data(), src_, bytes, kind);
 }
 
 tensor_t Tensor::contiguous() const {
