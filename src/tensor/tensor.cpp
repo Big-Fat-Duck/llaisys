@@ -5,6 +5,7 @@
 #include <cstring>
 #include <numeric>
 #include <sstream>
+#include <functional>
 
 namespace llaisys {
 
@@ -178,18 +179,70 @@ bool Tensor::isContiguous() const {
 }
 
 tensor_t Tensor::permute(const std::vector<size_t> &order) const {
-    TO_BE_IMPLEMENTED();
-    return std::shared_ptr<Tensor>(new Tensor(_meta, _storage));
+    const size_t len = ndim();
+    if (order.size() != len) {
+        throw std::runtime_error("Tensor::permute: order length error!");
+    }
+    std::vector<size_t> check(len, 0);
+    for (size_t i = 0; i < len; i++) {
+        if (order[i] >= len) throw std::runtime_error("Tensor::permute: order not permutation!");
+        check[order[i]]++;
+    }
+    for (size_t i = 0; i < len; i++) if (check[i] != 1) {
+        throw std::runtime_error("Tensor::permute: order not permutation!");
+    }
+    std::vector<size_t> new_shape(len);
+    std::vector<ptrdiff_t> new_strides(len);
+    for (size_t i = 0; i < len; i++) {
+        new_shape[i] = _meta.shape[order[i]];
+        new_strides[i] = _meta.strides[order[i]];
+    }
+    TensorMeta m;
+    m.dtype = _meta.dtype;
+    m.shape = std::move(new_shape);
+    m.strides = std::move(new_strides);
+    return tensor_t(new Tensor(m, _storage, _offset));
 }
 
 tensor_t Tensor::view(const std::vector<size_t> &shape) const {
-    TO_BE_IMPLEMENTED();
-    return std::shared_ptr<Tensor>(new Tensor(_meta, _storage));
+    if (numel() != std::accumulate(shape.begin(), shape.end(), (size_t)1, std::multiplies<size_t>{})) {
+        throw std::runtime_error("Tensor::view: numel mismatch");
+    }
+    if (!isContiguous()) {
+        throw std::runtime_error("Tensor::view: tensor is not contiguous");
+    }
+
+    TensorMeta new_meta;
+    new_meta.shape = shape;
+    new_meta.dtype = _meta.dtype;
+    new_meta.strides = std::vector<ptrdiff_t>(shape.size());
+    size_t new_dim = shape.size();
+    ptrdiff_t stride = 1;
+    for (size_t i = 1; i <= new_dim; i++) {
+        new_meta.strides[new_dim - i] = stride;
+        stride *= (ptrdiff_t)shape[new_dim - i];
+    }
+    return tensor_t(new Tensor(new_meta, _storage, _offset));
 }
 
 tensor_t Tensor::slice(size_t dim, size_t start, size_t end) const {
-    TO_BE_IMPLEMENTED();
-    return std::shared_ptr<Tensor>(new Tensor(_meta, _storage));
+    if (dim >= ndim()) {
+        throw std::runtime_error("Tensor::slice: dim error");
+    }
+    if (start > end || end > _meta.shape[dim]) {
+        throw std::runtime_error("Tensor::slice: range error");
+    }
+    size_t new_offset = _offset + (size_t)_meta.strides[dim] * start * elementSize();
+    
+    std::vector<size_t> new_shape = _meta.shape;
+    new_shape[dim] = end - start;
+
+    TensorMeta m;
+    m.dtype = _meta.dtype;
+    m.shape = std::move(new_shape);
+    m.strides = _meta.strides;
+
+    return tensor_t(new Tensor(m, _storage, new_offset));
 }
 
 void Tensor::load(const void *src_) {
