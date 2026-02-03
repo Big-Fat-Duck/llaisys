@@ -29,7 +29,7 @@ static void rope_(T* out,
 
             for (size_t j = 0; j < half; ++j) {
                 float pre_x = llaisys::utils::cast<float>(*(in_ptr + j)), pre_y = llaisys::utils::cast<float>(*(in_ptr + half + j));
-                float Phi = p / powf(theta, j * 2.0 / d);
+                float Phi = p / powf(theta, j * 2.0f / d);
                 float cur_x = pre_x * cosf(Phi) - pre_y * sinf(Phi), cur_y = pre_y * cosf(Phi) + pre_x * sinf(Phi);
                 *(out_ptr + j) = llaisys::utils::cast<T>(cur_x); *(out_ptr + half + j) = llaisys::utils::cast<T>(cur_y);
             }
