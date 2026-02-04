@@ -6,7 +6,7 @@ from ..libllaisys import DataType, llaisysDataType_t, llaisysDeviceType_t
 from pathlib import Path
 import safetensors
 import json
-import ml_dtypes
+# import ml_dtypes
 import numpy as np
 from array import array
 from ctypes import (
@@ -82,8 +82,8 @@ class Qwen2:
         top_p: float = 0.8,
         temperature: float = 0.8,
     ):
-        print("[qwen2] enter generate", flush=True)
-        print("[qwen2] model is None?", self._model is None, flush=True)
+        # print("[qwen2] enter generate", flush=True)
+        # print("[qwen2] model is None?", self._model is None, flush=True)
 
         if max_new_tokens is None:
             max_new_tokens = 0
@@ -99,9 +99,9 @@ class Qwen2:
         infer = LIB_LLAISYS.llaisysQwen2ModelInfer
         for _ in range(max_new_tokens):
             ptr = cast(token_ids.buffer_info()[0], POINTER(c_int64))
-            print("[dbg] before infer ntoken=", len(token_ids), flush=True)
+            # print("[dbg] before infer ntoken=", len(token_ids), flush=True)
             next_token = int(infer(self._model, ptr, c_size_t(len(token_ids))))
-            print("[dbg] after infer next_token=", next_token, flush=True)
+            # print("[dbg] after infer next_token=", next_token, flush=True)
             token_ids.append(next_token)
             if next_token == end_token:
                 break
@@ -109,9 +109,9 @@ class Qwen2:
         return list(token_ids)
 
     def _init_model(self):
-        print("[qwen2] _init_model: start", flush=True)
+        # print("[qwen2] _init_model: start", flush=True)
         self._load_c_api()
-        print("[qwen2] _init_model: after _load_c_api", flush=True)
+        # print("[qwen2] _init_model: after _load_c_api", flush=True)
 
         config_path = self.model_path / "config.json"
         if not config_path.is_file():
@@ -128,7 +128,7 @@ class Qwen2:
 
         torch_dtype = cfg_get("torch_dtype", "dtype", default=None)
         dtype = DataType.F32  # DEBUG: force fp32 to avoid bf16 kernels on CPU
-        print("[dbg] FORCE dtype =", dtype, flush=True)
+        # print("[dbg] FORCE dtype =", dtype, flush=True)
 
         nlayer = int(cfg_get("num_hidden_layers", "n_layer", "num_layers"))
         hs = int(cfg_get("hidden_size", "n_embd"))
@@ -162,22 +162,22 @@ class Qwen2:
             c_int64(end_token),
         )
 
-        print("[dbg] meta.dtype =", int(self._meta.dtype), flush=True)
+        # print("[dbg] meta.dtype =", int(self._meta.dtype), flush=True)
 
         LIB_LLAISYS.llaisysSetContextRuntime(
             llaisysDeviceType_t(self.device), c_int(0)
         )
-        print("[qwen2] _init_model: meta nlayer/hs/nh/voc/maxseq =", nlayer, hs, nh, voc, maxseq, flush=True)
-        print("[qwen2] _init_model: before ModelCreate", flush=True)
+        # print("[qwen2] _init_model: meta nlayer/hs/nh/voc/maxseq =", nlayer, hs, nh, voc, maxseq, flush=True)
+        # print("[qwen2] _init_model: before ModelCreate", flush=True)
         self._model = LIB_LLAISYS.llaisysQwen2ModelCreate(
             byref(self._meta), llaisysDeviceType_t(self.device), None, c_int(0)
         )
-        print("[qwen2] _init_model: after  ModelCreate, model ptr =", hex(int(self._model) if self._model else 0), flush=True)
+        # print("[qwen2] _init_model: after  ModelCreate, model ptr =", hex(int(self._model) if self._model else 0), flush=True)
         
         
-        print("[qwen2] _init_model: before _load_weights", flush=True)
+        # print("[qwen2] _init_model: before _load_weights", flush=True)
         self._load_weights(nlayer)
-        print("[qwen2] _init_model: after  _load_weights", flush=True)
+        # print("[qwen2] _init_model: after  _load_weights", flush=True)
 
     def _load_c_api(self):
         if getattr(LIB_LLAISYS, "_qwen2_api_loaded", False):
@@ -233,22 +233,22 @@ class Qwen2:
         if not weights:
             raise ValueError("No safetensors weights found.")
         
-        print("[qwen2] _load_weights: start", flush=True)
+        # print("[qwen2] _load_weights: start", flush=True)
         w_struct = LIB_LLAISYS.llaisysQwen2ModelWeights(self._model).contents
-        print("[qwen2] _load_weights: got weights struct", flush=True)
-        print("[dbg] in_embed handle =", int(w_struct.in_embed or 0), flush=True)
-        print("[dbg] out_embed handle =", int(w_struct.out_embed or 0), flush=True)
-        print("[dbg] out_norm handle =", int(w_struct.out_norm_w or 0), flush=True)
+        # print("[qwen2] _load_weights: got weights struct", flush=True)
+        # print("[dbg] in_embed handle =", int(w_struct.in_embed or 0), flush=True)
+        # print("[dbg] out_embed handle =", int(w_struct.out_embed or 0), flush=True)
+        # print("[dbg] out_norm handle =", int(w_struct.out_norm_w or 0), flush=True)
 
-        print("[dbg] attn_norm_w ptr =", w_struct.attn_norm_w, bool(w_struct.attn_norm_w), flush=True)
-        if bool(w_struct.attn_norm_w):
-            print("[dbg] attn_norm_w[0] =", int(w_struct.attn_norm_w[0] or 0), flush=True)
-            print("[dbg] attn_norm_w[1] =", int(w_struct.attn_norm_w[1] or 0), flush=True)
+        # print("[dbg] attn_norm_w ptr =", w_struct.attn_norm_w, bool(w_struct.attn_norm_w), flush=True)
+        #if bool(w_struct.attn_norm_w):
+            # print("[dbg] attn_norm_w[0] =", int(w_struct.attn_norm_w[0] or 0), flush=True)
+            # print("[dbg] attn_norm_w[1] =", int(w_struct.attn_norm_w[1] or 0), flush=True)
 
 
-        for i in range(nlayer):
+        '''for i in range(nlayer):
             if i < 2:  # 只打印前两层，避免刷屏
-                print(f"[qwen2] loading layer {i}", flush=True)
+                print(f"[qwen2] loading layer {i}", flush=True)'''
 
         def load_tensor(dst, src, name=""):
             if src is None:
@@ -265,7 +265,7 @@ class Qwen2:
                 src = np.ascontiguousarray(src)
 
             # 3) call C API
-            print("[dbg] load", name, "src.dtype=", src.dtype, "shape=", src.shape, flush=True)
+            # print("[dbg] load", name, "src.dtype=", src.dtype, "shape=", src.shape, flush=True)
             LIB_LLAISYS.tensorLoad(dst, c_void_p(src.ctypes.data))
 
 
@@ -324,4 +324,4 @@ class Qwen2:
             load_tensor(w_struct.mlp_down_w[i], down_w, f"{prefix}mlp.down_proj.weight")
 
         self._weights_loaded = True
-        print("[qwen2] _load_weights: done", flush=True)
+        # print("[qwen2] _load_weights: done", flush=True)
