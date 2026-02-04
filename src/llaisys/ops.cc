@@ -23,7 +23,17 @@ __C {
         llaisys::ops::embedding(out->tensor, index->tensor, weight->tensor);
     }
     void llaisysLinear(llaisysTensor_t out, llaisysTensor_t in, llaisysTensor_t weight, llaisysTensor_t bias) {
-        llaisys::ops::linear(out->tensor, in->tensor, weight->tensor, bias->tensor);
+        if (!out || !in || !weight) {
+            fprintf(stderr, "[llaisysLinear] null ptr: out=%p in=%p weight=%p bias=%p\n", out, in, weight, bias);
+            abort();
+        }
+        //llaisys::ops::linear(out->tensor, in->tensor, weight->tensor, bias->tensor);
+        if (bias) {
+            llaisys::ops::linear(out->tensor, in->tensor, weight->tensor, bias->tensor);
+        } else {
+            llaisys::ops::linear(out->tensor, in->tensor, weight->tensor, nullptr);
+        }
+
     }
     void llaisysRearrange(llaisysTensor_t out, llaisysTensor_t in) {
         llaisys::ops::rearrange(out->tensor, in->tensor);
