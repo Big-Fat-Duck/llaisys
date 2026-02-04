@@ -99,9 +99,9 @@ class Qwen2:
         infer = LIB_LLAISYS.llaisysQwen2ModelInfer
         for _ in range(max_new_tokens):
             ptr = cast(token_ids.buffer_info()[0], POINTER(c_int64))
-            # print("[dbg] before infer ntoken=", len(token_ids), flush=True)
+            print("[dbg] before infer ntoken=", len(token_ids), flush=True)
             next_token = int(infer(self._model, ptr, c_size_t(len(token_ids))))
-            # print("[dbg] after infer next_token=", next_token, flush=True)
+            print("[dbg] after infer next_token=", next_token, flush=True)
             token_ids.append(next_token)
             if next_token == end_token:
                 break
