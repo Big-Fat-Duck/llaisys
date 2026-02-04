@@ -6,7 +6,7 @@ from ..libllaisys import DataType, llaisysDataType_t, llaisysDeviceType_t
 from pathlib import Path
 import safetensors
 import json
-# import ml_dtypes
+import ml_dtypes
 import numpy as np
 from array import array
 from ctypes import (
